@@ -23,6 +23,7 @@ from app.llm.base import ToolCall, ToolSpec
 from app.llm.client import LLMClient
 from app.matching.embeddings import Embedder
 from app.matching.service import NoResumeError, find_matches
+from app.resume.tailor_service import TailorError, tailor_for_job
 
 logger = logging.getLogger(__name__)
 
@@ -172,8 +173,18 @@ async def explain_match(ctx: AgentContext, args: JobArgs) -> dict[str, Any]:
 
 
 async def tailor_resume(ctx: AgentContext, args: JobArgs) -> dict[str, Any]:
-    # Implemented in Phase 6 (rewrite + verification pass + PDF).
-    return {"error": "Resume tailoring is not available yet."}
+    try:
+        record = await tailor_for_job(ctx.sessionmaker, ctx.tools_llm, ctx.user_id, args.job_id)
+    except TailorError as exc:
+        return {"error": str(exc)}
+    content = record.content
+    return {
+        "tailored_resume_id": record.id,
+        "pdf": "will be sent to the user as a file",
+        "summary": content["summary"],
+        "top_skills": content["skills"][:8],
+        "claims_removed_by_fact_check": [d["claim"] for d in record.dropped],
+    }
 
 
 async def run_sql_readonly(ctx: AgentContext, args: SQLArgs) -> dict[str, Any]:
@@ -207,7 +218,8 @@ TOOLS: dict[str, Tool] = {
         ),
         Tool(
             "tailor_resume",
-            "Rewrite the user's resume for one job (facts from the original only).",
+            "Rewrite the user's resume for one job using only facts from their original "
+            "resume (fact-checked); the PDF is sent to them automatically.",
             JobArgs,
             tailor_resume,
         ),

@@ -226,3 +226,20 @@ class LLMCache(Base):
     model: Mapped[str] = mapped_column(String(100), nullable=False)
     response: Mapped[dict] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = _now()
+
+
+class TailoredResumeRecord(Base):
+    """A verified, job-specific rewrite of a resume (rendered to PDF on demand)."""
+
+    __tablename__ = "tailored_resumes"
+    __table_args__ = (Index("ix_tailored_resumes_user_job", "user_id", "job_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
+    resume_id: Mapped[int] = mapped_column(
+        ForeignKey("resumes.id", ondelete="CASCADE"), nullable=False
+    )
+    content: Mapped[dict] = mapped_column(JSONB, nullable=False)  # TailoredResume
+    dropped: Mapped[list[dict]] = mapped_column(JSONB, server_default="[]", nullable=False)
+    created_at: Mapped[datetime] = _now()

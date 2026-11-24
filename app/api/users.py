@@ -6,14 +6,14 @@ for testing and demos, and are protected by the admin key like everything non-pu
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.agent.loop import handle_message
 from app.agent.tools import AgentContext
 from app.api.admin import require_admin
-from app.db.models import User
+from app.db.models import TailoredResumeRecord, User
 from app.db.queries import get_or_create_preferences, get_user
 from app.db.session import get_engine, get_sessionmaker
 from app.llm.client import LLMClient, LLMError, get_agent_llm_client, get_llm_client
@@ -22,6 +22,7 @@ from app.matching.service import NoResumeError, find_matches
 from app.resume.parse import ResumeError
 from app.resume.schemas import ResumeProfile
 from app.resume.service import save_resume
+from app.resume.tailor_service import TailorError, tailor_for_job, tailored_pdf
 
 router = APIRouter(prefix="/users", tags=["users"], dependencies=[Depends(require_admin)])
 
@@ -160,4 +161,36 @@ async def chat(
         await _require_user(session, user_id)
     ctx = AgentContext(sessions, get_engine(), agent_llm, embedder, user_id, task_llm=llm)
     reply = await handle_message(ctx, body.message)
-    return {"reply": reply.text, "steps": reply.steps}
+    return {
+        "reply": reply.text,
+        "steps": reply.steps,
+        "tailored_resume_ids": reply.tailored_resume_ids,
+    }
+
+
+@router.post("/{user_id}/tailor/{job_id}")
+async def tailor(user_id: int, job_id: int, sessions: Sessions, llm: LLM) -> dict:
+    """Tailor the active resume for a job; returns the content and what was fact-checked out."""
+    async with sessions() as session:
+        await _require_user(session, user_id)
+    try:
+        record = await tailor_for_job(sessions, llm, user_id, job_id)
+    except TailorError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    except LLMError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "LLM unavailable, retry") from exc
+    return {"id": record.id, "content": record.content, "dropped": record.dropped}
+
+
+@router.get("/{user_id}/tailored/{tailored_id}.pdf")
+async def tailored_resume_pdf(user_id: int, tailored_id: int, sessions: Sessions) -> Response:
+    async with sessions() as session:
+        record = await session.get(TailoredResumeRecord, tailored_id)
+    if record is None or record.user_id != user_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "tailored resume not found")
+    pdf = await tailored_pdf(sessions, record)
+    return Response(
+        pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="resume-{tailored_id}.pdf"'},
+    )

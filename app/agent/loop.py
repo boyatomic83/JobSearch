@@ -63,6 +63,15 @@ class AgentReply:
     text: str
     steps: list[dict[str, Any]] = field(default_factory=list)
 
+    @property
+    def tailored_resume_ids(self) -> list[int]:
+        """PDFs the bot should send along with the text reply."""
+        return [
+            st["result"]["tailored_resume_id"]
+            for st in self.steps
+            if st["tool"] == "tailor_resume" and "tailored_resume_id" in st["result"]
+        ]
+
 
 async def _system_prompt(ctx: AgentContext) -> str:
     async with ctx.sessionmaker() as session, session.begin():

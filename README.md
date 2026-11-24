@@ -156,6 +156,31 @@ the LLM writes SQL with the schema in its prompt, then three independent layers 
    the whitelist only (migration 0005). Tests bypass the validator on purpose and show
    the role still blocks `SELECT raw_text FROM resumes` and `SELECT embedding FROM jobs`.
 
+## Resume tailoring (no invented facts)
+
+`tailor_resume(job_id)` rewrites the summary, skill order and bullets for one job, then
+proves every claim came from the original resume:
+
+1. **Tailor** (LLM): reorder / rephrase / emphasise only. No new employers, titles,
+   dates, numbers, tools, skills, team sizes or achievements.
+2. **Verify** (a second LLM call): the draft is split into claims (each summary
+   sentence, skill, role line and bullet), and a strict fact-checker judges each one
+   against the original text. A claim it doesn't return a verdict for counts as unverified.
+3. **Rules** (deterministic): any number, skill or employer that doesn't literally
+   appear in the original is dropped, whatever the LLM said.
+
+Flagged claims are removed (an unverified employer removes the whole role) and listed back
+to the user. Measured with the real model on a deliberately bad draft (6 invented +
+6 genuine claims): the LLM verifier flagged all 6 inventions, including "Mentored
+engineers" and "Built search", which have no number to catch; the rules independently
+caught 4 of the 6 (team size 50, Rust, 45% vs 30%, Google). Neither layer flagged a genuine
+claim.
+
+The PDF is rendered with reportlab (pure Python; weasyprint needs system libraries).
+Header, contact and education come straight from the original resume. Built-in PDF fonts
+lack some Unicode (the model's non-breaking hyphens rendered as boxes), so text is
+normalised to Windows-1252; resumes in non-Latin scripts would need an embedded TTF font.
+
 ## Free-tier latency
 
 Groq's free tier allows 8,000 tokens/minute per model, and one agent turn costs ~4k

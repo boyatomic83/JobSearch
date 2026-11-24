@@ -50,6 +50,8 @@
 - Prompts must forbid outside knowledge: reasons/gaps grounded in shown text only.
 - Agent model: LLM_AGENT_MODEL=openai/gpt-oss-20b. Don't switch to qwen: it fabricated a
   statistic instead of calling run_sql_readonly (tested 2026-11-24).
+- Tailoring: keep BOTH the LLM verifier and the rule checks; each catches what the other
+  misses (measured). PDF text must go through render._pdf_safe.
 - Text-to-SQL: never loosen sql_guard without a test; the 0005 grants must match
   ALLOWED_COLUMNS (test enforces it).
 
