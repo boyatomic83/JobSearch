@@ -75,3 +75,12 @@
   adding anything heavy to the web process.
 - Dedup = same company + location + normalised title + cosine > 0.95 (title/location
   guards are deliberate, backed by data in README). Don't loosen without re-measuring.
+
+## Production (deployed 2026-11-24)
+- App: https://jobscout-6w30.onrender.com (Render free, Docker, auto-deploy on commit).
+  Bot @Cosmo122bot uses the webhook the app registers on startup (RENDER_EXTERNAL_URL).
+- DB: Neon (DATABASE_URL in .env). Scheduled jobs: GitHub Actions (nightly.yml, digest.yml).
+- Deploy: push to main (auto-deploy). If it doesn't pick up, trigger the hook in .env:
+  `curl -fsS -X POST "$RENDER_DEPLOY_HOOK"` — then verify `/health` and the bot's webhook.
+- NEVER run the app locally with the real TELEGRAM_BOT_TOKEN: startup deletes the webhook
+  and switches the bot to polling. Use `TELEGRAM_BOT_TOKEN= ` for local runs.
