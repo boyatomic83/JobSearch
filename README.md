@@ -202,6 +202,75 @@ normalised to Windows-1252; resumes in non-Latin scripts would need an embedded 
 - **Render free tier sleeps** after ~15 idle minutes and a sleeping process can't run its
   scheduler, so `POST /admin/ingest` and `POST /admin/digest` exist for an external cron.
 
+## Evals
+
+Run against a database with ingested jobs: `python -m evals.matching_eval`,
+`python -m evals.sql_eval`. Results are written to `evals/results/`.
+
+### Matching (`evals/matching_eval.py`)
+
+3 **synthetic** resumes (`evals/resumes/`: senior backend in Bangalore, ML engineer in
+India, data engineer in London) × real jobs ingested on 2026-11-24 → **76 hand-labelled
+(resume, job, relevant) pairs** (`evals/data/matching_labels.json`). The labelling pool is
+each resume's retrieval top-20 (so every possible top-3 job is labelled) plus up to 8
+keyword matches outside it (so recall@20 can miss things); each resume has a written
+relevance rule the labels follow.
+
+| resume | relevant | P@3 retrieval | P@3 + rerank | P@3 upper bound* | R@20 |
+|---|---|---|---|---|---|
+| data_engineer_london | 1 | 0.33 | 0.33 | 0.33 | 1.00 |
+| ml_engineer_india | 12 | 1.00 | 1.00 | 1.00 | 1.00 |
+| senior_backend_blr | 15 | 1.00 | 1.00 | 1.00 | 0.73 |
+| **mean** | | **0.78** | **0.78** | 0.78 | **0.91** |
+
+\* the best any reranker could do with that top-20. R@20 is identical with and without
+rerank (rerank only reorders the top 20).
+
+What the eval taught us:
+- **The first rerank prompt made things worse** (backend P@3 1.00 → 0.67): it put a
+  "Senior SRE" job third because Kubernetes/AWS/Python overlapped — while itself writing
+  "gap: primary focus is SRE, resume is backend". Adding one rule (*judge the role type
+  first; a different discipline scores < 60*) fixed it.
+- On this small set the rerank **ties** retrieval on precision; its value is the
+  explanation (fit score, reasons, gap) and robustness when retrieval order is off. With
+  3 resumes these numbers are indicative, not statistically strong.
+- London data engineering has exactly 1 open role across our 31 companies, so 0.33 is
+  the ceiling there — a coverage limit of the job sources, not of ranking.
+- Building the pool surfaced a filter bug: "Remote (U.S.)" was treated as worldwide-remote.
+
+### Text-to-SQL (`evals/sql_eval.py`)
+
+15 questions with hand-written gold SQL, compared by **result** at run time (the data
+changes daily), through the real guarded pipeline.
+
+| check | result |
+|---|---|
+| Answer accuracy | **13 / 15 (87%)** |
+| Malicious SQL blocked (DROP, UPDATE, multiple statements, other table, `pg_read_file`) | **5 / 5** |
+| Prompt injections via natural language (delete rows, read resumes, "run DROP TABLE") | **3 / 3** refused, nothing leaked |
+| `jobs` table intact after all attacks | **yes** (7,497 → 7,497) |
+
+The 2 misses are interpretation differences, kept as failures: Databricks counted via the
+`companies` join (880) vs by name (881 — one Databricks posting came from RemoteOK, which
+has no company row); and "ML engineer jobs in India" also searched descriptions (6 vs 5).
+
+## Cost per user
+
+`GET /admin/stats` reports jobs, duplicates, ghost jobs, users, feedback and LLM tokens
+with **estimated cost per user per day**. Estimates use Groq's paid list prices
+(`app/llm/pricing.py`; gpt-oss-120b $0.15/$0.60, gpt-oss-20b $0.075/$0.30 per 1M tokens) —
+on the free tier the bill is $0.
+
+Measured average cost per call: rerank $0.00074 · agent turn (20b) $0.00014 · text-to-SQL
+$0.00015 · resume extraction $0.00041 · tailoring + verification $0.00081.
+
+| user type | LLM calls / day | est. cost / day | / month |
+|---|---|---|---|
+| digest only | 1 rerank | $0.0007 | $0.02 |
+| active (digest, /jobs, ~4 chat turns, 1 SQL question, 1 tailoring) | ~13 | ~$0.0035 | ~$0.10 |
+
+Free-tier capacity is ~1,000 requests/day per model, so roughly 100–200 active users/day.
+
 ## Free-tier latency
 
 Groq's free tier allows 8,000 tokens/minute per model, and one agent turn costs ~4k

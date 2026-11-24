@@ -1,0 +1,477 @@
+{
+ "_note": "SYNTHETIC eval set. Resumes are fictional (evals/resumes/). Jobs are real postings ingested on 2026-11-24, identified by source:source_id. Labels were assigned by hand against each resume's written relevance_rule, after reading title + description; pool = retrieval top-20 + up to 8 keyword matches outside it (evals/build_label_pool.py).",
+ "labelled_on": "2026-11-24",
+ "resumes": {
+  "data_engineer_london": [
+   {
+    "key": "lever:204f6cd7-98a3-4360-87e3-8876adf087da",
+    "title": "Senior Data Engineer - Data Platform",
+    "company": "Spotify",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8847747002",
+    "title": "Software Engineer - New Grad (2027 Start) - London",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8916552002",
+    "title": "Senior Forward Deployed Engineer (Full Stack Engineer)",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8374611002",
+    "title": "Staff Software Engineer - Backend",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8303020002",
+    "title": "Senior Staff Software Engineer - Delta",
+    "company": "Databricks",
+    "relevant": false,
+    "note": "storage-engine internals, not data engineering"
+   },
+   {
+    "key": "greenhouse:8921476002",
+    "title": "Forward Deployed Engineer",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8656202002",
+    "title": "Forward Deployed Engineering - Senior Architect",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8923866002",
+    "title": "Sr. Product Designer",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8439047002",
+    "title": "Forward Deployed Engineer - Emerging Enterprise & DNB",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "lever:0f7d1e01-1f74-4786-944d-910208d390fa",
+    "title": "Software Engineer, New Grad - Query Engines",
+    "company": "Palantir",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8952359002",
+    "title": "Solutions Architect (Growth Accounts - All sectors) x 2 New Roles",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8927390002",
+    "title": "Senior Forward Deployed Engineer",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8927179002",
+    "title": "AI Forward Deployed Engineer",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "lever:4056c8f6-0e6a-43f7-b387-4a97bd3dbb19",
+    "title": "Software Engineer – Query Engines",
+    "company": "Palantir",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8128182",
+    "title": "Services Architect 3 - Paris/London",
+    "company": "Datadog",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8682860002",
+    "title": "Backend Engineer (Ruby), Plan: Spec-Driven Development",
+    "company": "GitLab",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8274546",
+    "title": "Senior Software Engineer - Platform Billing Core",
+    "company": "Elastic",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8940898002",
+    "title": "Backend Engineer (Ruby), AI Engineering: AI Catalog",
+    "company": "GitLab",
+    "relevant": false
+   },
+   {
+    "key": "lever:fb3f185c-961c-4b7b-a568-b42a37d66ead",
+    "title": "Senior Backend Engineer - Subscriptions",
+    "company": "Spotify",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7642125002",
+    "title": "Senior Solutions Architect (Transport)",
+    "company": "Databricks",
+    "relevant": false
+   }
+  ],
+  "ml_engineer_india": [
+   {
+    "key": "greenhouse:8258587",
+    "title": "Machine Learning Engineer (L3)",
+    "company": "Twilio",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8258593",
+    "title": "Staff Machine Learning Engineer (L4)",
+    "company": "Twilio",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:7985187",
+    "title": "Machine Learning Engineer",
+    "company": "Coinbase",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:7739592",
+    "title": "Senior Machine Learning Engineer",
+    "company": "Coinbase",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8926498002",
+    "title": "Staff Software Engineer- Databricks AI",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8924868002",
+    "title": "Sr. Software Engineer- Databricks AI",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:7845325002",
+    "title": "Senior ML & AI Technical Solutions Engineer",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7958688002",
+    "title": "Staff Software Engineer  (Search Ranking)",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:7841778002",
+    "title": "Staff Software Engineer - Search Platform",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8439350002",
+    "title": "Senior Staff Software Engineer- Search Quality",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8439348002",
+    "title": "Staff Software Engineer- Search Quality",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8585164002",
+    "title": "Specialist Solutions Architect - AI/ML",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8593505002",
+    "title": "Specialist Solutions Architect - AI/ML",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7897431002",
+    "title": "Senior Software Engineer - Data + AI Observability",
+    "company": "Databricks",
+    "relevant": false,
+    "note": "data infra product, not ML"
+   },
+   {
+    "key": "greenhouse:7601572002",
+    "title": "Staff Software Engineer - Data Platform",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8065032",
+    "title": "Software Engineer (L3)",
+    "company": "Twilio",
+    "relevant": true,
+    "note": "deploys ML anti-fraud systems"
+   },
+   {
+    "key": "greenhouse:8940982002",
+    "title": "Applied AI Engineer, Enterprise AI",
+    "company": "GitLab",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8320187002",
+    "title": "Staff Software Engineer - Backend",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7439442002",
+    "title": "Engineering Manager - Backend",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7495457002",
+    "title": "Senior Engineering Manager - Backend",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:5486776008",
+    "title": "Applied AI Architect, Beneficial Deployment",
+    "company": "Anthropic",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7107054",
+    "title": "Senior Staff Data Scientist, Guest & Host Marketplace AI",
+    "company": "Airbnb",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8630019002",
+    "title": "Manager/Sr. Manager, AI Forward Deployed Engineering",
+    "company": "Databricks",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:5447368008",
+    "title": "Applied AI Architect, Partnerships",
+    "company": "Anthropic",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:5424310008",
+    "title": "Applied AI Architect",
+    "company": "Anthropic",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8314336",
+    "title": "AI Tool Admin",
+    "company": "Elastic",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:5443882008",
+    "title": "Applied AI Architect",
+    "company": "Anthropic",
+    "relevant": false
+   },
+   {
+    "key": "lever:f2de8c5f-1636-428d-aaea-af1400142975",
+    "title": "Security Architect - AI-Powered Security Engineering",
+    "company": "Meesho",
+    "relevant": false
+   }
+  ],
+  "senior_backend_blr": [
+   {
+    "key": "greenhouse:8716143002",
+    "title": "Senior Backend Engineer, India",
+    "company": "GitLab",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8263823",
+    "title": "Senior Software Engineer",
+    "company": "Okta",
+    "relevant": true,
+    "note": "build/release infrastructure (platform)"
+   },
+   {
+    "key": "greenhouse:6709301002",
+    "title": "Senior Software Engineer (Backend)",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8203481",
+    "title": "Senior Software Engineer - Fullstack",
+    "company": "Okta",
+    "relevant": false,
+    "note": "fullstack, not backend-centred"
+   },
+   {
+    "key": "greenhouse:8255904",
+    "title": "Senior Site Reliability Engineer (K8s, Terraform, Python)",
+    "company": "Okta",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7651326002",
+    "title": "Senior Staff Software Engineer (Backend)",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:7647294002",
+    "title": "Senior Software Engineer - Backend Infrastructure",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8928675002",
+    "title": "Senior Backend Engineer, Development Health",
+    "company": "GitLab",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8081016",
+    "title": "Staff Software Engineer",
+    "company": "Okta",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8775507002",
+    "title": "Intermediate Backend Engineer, India",
+    "company": "GitLab",
+    "relevant": false,
+    "note": "intermediate level"
+   },
+   {
+    "key": "greenhouse:7781674",
+    "title": "Principal Software Engineer",
+    "company": "Okta",
+    "relevant": false,
+    "note": "principal level, above senior/staff"
+   },
+   {
+    "key": "greenhouse:8255907",
+    "title": "Senior Site Reliability Engineer - Kubernetes & AWS",
+    "company": "Okta",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8260950",
+    "title": "Senior Site Reliability Engineer",
+    "company": "Okta",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7955601002",
+    "title": "Sr Software Engineer - Backend",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8263916",
+    "title": "Senior Software Engineer - SRE",
+    "company": "Okta",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7630152002",
+    "title": "Sr Staff Software Engineer (Backend)",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:7765038",
+    "title": "Senior Software Engineer – Tooling & Platform (Terraform)",
+    "company": "Okta",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8781299002",
+    "title": "Staff Software Engineer - NLP",
+    "company": "GitLab",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8345577",
+    "title": "Senior Software Engineer",
+    "company": "Okta",
+    "relevant": false,
+    "note": "fullstack internal tooling"
+   },
+   {
+    "key": "greenhouse:8039085",
+    "title": "Senior Software Engineer",
+    "company": "Okta",
+    "relevant": false,
+    "note": "docs-site infra + frontend"
+   },
+   {
+    "key": "greenhouse:7647369002",
+    "title": "Senior Software Engineer (Data Platform)",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8320187002",
+    "title": "Staff Software Engineer - Backend",
+    "company": "Databricks",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8358823",
+    "title": "Account Executive, Platforms Large Users (India)",
+    "company": "Stripe",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8916232002",
+    "title": "Software Engineer, Delivery : Release",
+    "company": "GitLab",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:8890971002",
+    "title": "Intermediate Backend Engineer , Security Factory",
+    "company": "GitLab",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7618977",
+    "title": "Software Engineer, Core Technology",
+    "company": "Stripe",
+    "relevant": true
+   },
+   {
+    "key": "greenhouse:8333118",
+    "title": "Senior Software Engineer - Android",
+    "company": "Okta",
+    "relevant": false
+   },
+   {
+    "key": "greenhouse:7601565002",
+    "title": "Staff Software Engineer - Databases",
+    "company": "Databricks",
+    "relevant": true
+   }
+  ]
+ }
+}

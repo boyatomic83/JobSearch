@@ -1,0 +1,15 @@
+{
+  "_note": "SYNTHETIC resume for evaluation only — not a real person.",
+  "id": "senior_backend_blr",
+  "text": "Arjun Rao (synthetic)\nBangalore, India\nSenior Backend Engineer, Finlytics (2020-present)\n- Designed Python/FastAPI microservices on PostgreSQL serving 3k requests/second\n- Built event-driven pipelines with Kafka and Redis\n- Led migration to Kubernetes on AWS\nSoftware Engineer, ShopKart (2017-2020)\n- Built Django REST APIs and Celery workers\nSkills: Python, Go, FastAPI, Django, PostgreSQL, Kafka, Redis, Kubernetes, AWS, Docker\nEducation: B.E. Computer Science, RV College of Engineering, 2017",
+  "profile": {
+    "name": "Arjun Rao", "location": "Bangalore, India", "current_title": "Senior Backend Engineer",
+    "years_experience": 8, "seniority": "senior",
+    "roles": ["Senior Backend Engineer", "Software Engineer"],
+    "skills": ["Python", "Go", "FastAPI", "Django", "PostgreSQL", "Kafka", "Redis", "Kubernetes", "AWS", "Docker"],
+    "education": [{"degree": "B.E.", "field": "Computer Science", "institution": "RV College of Engineering", "year": 2017}],
+    "summary": "Senior backend engineer building Python and Go services, event pipelines and Kubernetes infrastructure."
+  },
+  "preferences": {"roles": ["Backend Engineer", "Software Engineer"], "locations": ["Bangalore", "Bengaluru", "India"], "seniority": "senior"},
+  "relevance_rule": "Relevant = a hands-on software engineering role centred on backend/platform/infrastructure/distributed systems at senior or staff level. Not relevant = frontend-only, mobile, data science/ML research, security specialist, SRE-only ops, management, sales/solutions roles, or clearly junior roles."
+}

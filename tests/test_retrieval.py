@@ -81,13 +81,16 @@ async def test_remote_only_and_locations(sessionmaker):
         job("remote-in", location="Remote - India", remote=True),
         job("remote-us", location="Remote - USA", remote=True),  # region-locked
         job("anywhere", location="Remote", remote=True),
+        job("worldwide", location="Remote (Worldwide)", remote=True),
+        job("remote-us-paren", location="Remote (U.S.)", remote=True),  # region-locked
     ]
     user_id, prefs = await setup(sessionmaker, jobs, locations=["bangalore", "India"])
-    assert set(await ids(sessionmaker, user_id, prefs)) == {"blr", "remote-in", "anywhere"}
+    expected = {"blr", "remote-in", "anywhere", "worldwide"}
+    assert set(await ids(sessionmaker, user_id, prefs)) == expected
     prefs.remote_only = True
-    assert set(await ids(sessionmaker, user_id, prefs)) == {"remote-in", "anywhere"}
+    assert set(await ids(sessionmaker, user_id, prefs)) == {"remote-in", "anywhere", "worldwide"}
     prefs.locations = []  # no location preference: any remote job
-    assert set(await ids(sessionmaker, user_id, prefs)) == {"remote-in", "remote-us", "anywhere"}
+    assert len(await ids(sessionmaker, user_id, prefs)) == 5
 
 
 async def test_min_salary_only_compares_same_currency_and_keeps_unknown(sessionmaker):

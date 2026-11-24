@@ -1,0 +1,46 @@
+{
+ "per_resume": [
+  {
+   "resume": "data_engineer_london",
+   "labelled_pairs": 20,
+   "missing_jobs": 0,
+   "unlabelled_in_top20": 0,
+   "relevant": 1,
+   "p@3_retrieval": 0.3333333333333333,
+   "p@3_rerank": 0.3333333333333333,
+   "p@3_oracle": 0.3333333333333333,
+   "r@20": 1.0,
+   "rerank_fell_back": false
+  },
+  {
+   "resume": "ml_engineer_india",
+   "labelled_pairs": 28,
+   "missing_jobs": 0,
+   "unlabelled_in_top20": 0,
+   "relevant": 12,
+   "p@3_retrieval": 1.0,
+   "p@3_rerank": 1.0,
+   "p@3_oracle": 1.0,
+   "r@20": 1.0,
+   "rerank_fell_back": false
+  },
+  {
+   "resume": "senior_backend_blr",
+   "labelled_pairs": 28,
+   "missing_jobs": 0,
+   "unlabelled_in_top20": 0,
+   "relevant": 15,
+   "p@3_retrieval": 1.0,
+   "p@3_rerank": 1.0,
+   "p@3_oracle": 1.0,
+   "r@20": 0.7333333333333333,
+   "rerank_fell_back": false
+  }
+ ],
+ "mean": {
+  "p@3_retrieval": 0.778,
+  "p@3_rerank": 0.778,
+  "p@3_oracle": 0.778,
+  "r@20": 0.911
+ }
+}

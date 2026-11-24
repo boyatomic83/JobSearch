@@ -105,3 +105,9 @@ async def test_answer_question_gives_up_with_error(engine, sessionmaker):
     llm, _ = make_llm(sessionmaker, ['{"sql": "DROP TABLE jobs"}'] * 2)
     result = await answer_question(llm, engine, "drop everything")
     assert "rejected" in result["error"]
+
+
+async def test_model_refusal_is_a_clean_error(engine, sessionmaker):
+    llm, _ = make_llm(sessionmaker, ['{"refusal": "modifying data is not allowed"}'])
+    result = await answer_question(llm, engine, "delete all jobs")
+    assert result == {"error": "refused: modifying data is not allowed"}

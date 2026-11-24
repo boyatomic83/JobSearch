@@ -1,0 +1,15 @@
+{
+  "_note": "SYNTHETIC resume for evaluation only — not a real person.",
+  "id": "data_engineer_london",
+  "text": "Tom Hughes (synthetic)\nLondon, United Kingdom\nData Engineer, StreamCo (2021-present)\n- Built batch and streaming pipelines with Spark, Airflow and Kafka\n- Modelled the warehouse in Snowflake with dbt; owned data quality tests\n- Wrote SQL and Python transformations powering company dashboards\nBI Developer, RetailOne (2019-2021)\n- Built reporting in SQL Server and Tableau\nSkills: SQL, Python, Spark, Airflow, Kafka, dbt, Snowflake, AWS, Tableau\nEducation: BSc Mathematics, University of Leeds, 2019",
+  "profile": {
+    "name": "Tom Hughes", "location": "London, United Kingdom", "current_title": "Data Engineer",
+    "years_experience": 5, "seniority": "mid",
+    "roles": ["Data Engineer", "BI Developer"],
+    "skills": ["SQL", "Python", "Spark", "Airflow", "Kafka", "dbt", "Snowflake", "AWS", "Tableau"],
+    "education": [{"degree": "BSc", "field": "Mathematics", "institution": "University of Leeds", "year": 2019}],
+    "summary": "Data engineer building Spark/Airflow pipelines and dbt/Snowflake warehouses."
+  },
+  "preferences": {"roles": ["Data Engineer", "Analytics Engineer"], "locations": ["London", "United Kingdom", "UK"], "seniority": "mid"},
+  "relevance_rule": "Relevant = data engineering / analytics engineering / data platform roles (pipelines, warehouses, ETL). Not relevant = ML research, generic backend without data focus, data science, sales/solutions/support, management, or director-level roles."
+}

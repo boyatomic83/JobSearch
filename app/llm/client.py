@@ -331,13 +331,18 @@ def _client_for(model: str | None) -> LLMClient:
     """One client per model, each with its own rate limiter and token budget, matching
     how providers apply free-tier limits per model."""
     from app.db.session import get_sessionmaker
+    from app.llm.pricing import prices_for
 
     s = get_settings()
+    provider = build_provider(model)
+    price_in, price_out = prices_for(
+        provider.model, s.llm_price_in_per_mtok, s.llm_price_out_per_mtok
+    )
     return LLMClient(
-        build_provider(model),
+        provider,
         get_sessionmaker(),
         rpm=s.llm_rpm,
         tpm=s.llm_tpm,
-        price_in_per_mtok=s.llm_price_in_per_mtok,
-        price_out_per_mtok=s.llm_price_out_per_mtok,
+        price_in_per_mtok=price_in,
+        price_out_per_mtok=price_out,
     )

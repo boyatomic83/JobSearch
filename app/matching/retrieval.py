@@ -26,7 +26,10 @@ _SENIORITY_EXCLUDE = {
 _INTERN = r"\m(intern|internship|co-?op|apprentice)\M"
 # A remote job's location with no region restriction ("Remote", "Anywhere", "Worldwide").
 # "Remote - USA" or "US Only" are restricted, and must match a preferred location instead.
-_UNRESTRICTED_REMOTE = r"^\s*(fully\s+)?(remote|anywhere|worldwide|global)\s*(\(.*\))?\s*$"
+_UNRESTRICTED_REMOTE = (
+    r"^\s*(fully\s+)?(remote|anywhere|worldwide|global)"
+    r"(\s*[-(,/]?\s*(anywhere|worldwide|global|remote)\)?)?\s*$"
+)  # "Remote", "Remote - Worldwide", "Remote (Anywhere)" — but NOT "Remote (U.S.)"
 
 
 @dataclass

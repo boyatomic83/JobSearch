@@ -17,6 +17,8 @@
 - Lint: `ruff check . --fix && ruff format .`
 - Ingest (local DB): `DATABASE_URL=postgresql://jobscout:jobscout@localhost:5432/jobscout python -m app.ingest.run [--source greenhouse lever remoteok]`
 - Embed + dedup + ghost score: same DATABASE_URL, `python -m app.matching.run [--reembed]` (~3 jobs/s on 2 CPUs)
+- Evals: `python -m evals.matching_eval` / `python -m evals.sql_eval` (need ingested jobs;
+  use real LLM calls — ask before running against the user's key in bulk)
 - Admin API: `curl -X POST -H "X-Admin-Key: $KEY" localhost:8000/admin/ingest?source=lever`
 
 ## Dependencies
@@ -50,6 +52,8 @@
 - Prompts must forbid outside knowledge: reasons/gaps grounded in shown text only.
 - Agent model: LLM_AGENT_MODEL=openai/gpt-oss-20b. Don't switch to qwen: it fabricated a
   statistic instead of calling run_sql_readonly (tested 2026-11-24).
+- Evals: labels in evals/data are hand-made; never 'fix' a metric by editing gold answers.
+  Fix the code or document the disagreement.
 - Tailoring: keep BOTH the LLM verifier and the rule checks; each catches what the other
   misses (measured). PDF text must go through render._pdf_safe.
 - Text-to-SQL: never loosen sql_guard without a test; the 0005 grants must match

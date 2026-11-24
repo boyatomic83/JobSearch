@@ -1,0 +1,15 @@
+{
+  "_note": "SYNTHETIC resume for evaluation only — not a real person.",
+  "id": "ml_engineer_india",
+  "text": "Meera Iyer (synthetic)\nHyderabad, India\nMachine Learning Engineer, InsightAI (2022-present)\n- Built retrieval-augmented generation (RAG) pipelines with LLMs and vector search\n- Fine-tuned transformer models in PyTorch for document classification\n- Deployed models behind FastAPI with Docker on GCP\nData Scientist Intern, Retailytics (2021)\n- Trained demand-forecasting models with scikit-learn\nSkills: Python, PyTorch, Transformers, LLMs, RAG, scikit-learn, SQL, FastAPI, Docker, GCP\nEducation: M.Tech Artificial Intelligence, IIIT Hyderabad, 2022",
+  "profile": {
+    "name": "Meera Iyer", "location": "Hyderabad, India", "current_title": "Machine Learning Engineer",
+    "years_experience": 3, "seniority": "mid",
+    "roles": ["Machine Learning Engineer", "Data Scientist Intern"],
+    "skills": ["Python", "PyTorch", "Transformers", "LLMs", "RAG", "scikit-learn", "SQL", "FastAPI", "Docker", "GCP"],
+    "education": [{"degree": "M.Tech", "field": "Artificial Intelligence", "institution": "IIIT Hyderabad", "year": 2022}],
+    "summary": "Machine learning engineer building LLM and RAG systems and deploying PyTorch models."
+  },
+  "preferences": {"roles": ["Machine Learning Engineer", "AI Engineer"], "locations": ["Hyderabad", "Bangalore", "Bengaluru", "India"], "seniority": "mid"},
+  "relevance_rule": "Relevant = a role whose main job is building/training/deploying ML or LLM models or ML/AI infrastructure (ML engineer, applied AI/ML scientist, AI engineer, MLOps). Not relevant = generic backend/frontend roles without ML focus, data analyst/BI, sales/solutions, management, or principal/director-level roles."
+}

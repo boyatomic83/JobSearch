@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     llm_reasoning_effort: str = ""
     llm_rpm: int = 20  # our own cap, kept below the provider's free-tier requests/minute
     llm_tpm: int = 7000  # tokens/minute budget (Groq free tier: 8000); 0 disables
-    # Estimated $ per 1M tokens, for cost reporting only (free tier is $0 in practice).
+    # Optional override of app/llm/pricing.py ($ per 1M tokens, for cost *estimates* only).
     llm_price_in_per_mtok: float = 0.0
     llm_price_out_per_mtok: float = 0.0
     embedding_provider: str = "local"

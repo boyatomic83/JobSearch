@@ -37,6 +37,10 @@ Rules:
 - Only use job_ids from the list.
 - Ground every statement in the text shown: the candidate profile and the job snippet.
   Never use outside knowledge about a company or its tech stack.
+- Judge the ROLE TYPE first: does the job's discipline match the candidate's target roles
+  and recent titles? A different discipline (e.g. SRE/ops vs backend development,
+  solutions/sales vs engineering, management vs individual contributor) scores below 60
+  no matter how much the skills overlap. Then judge skills, seniority and domain.
 - fit_score 0-100: 90+ near-perfect, 70-89 strong, 50-69 partial, <50 weak.
 - reasons: 2-3 short, specific bullets that tie a resume fact to something the job text
   asks for (e.g. "5 yrs Python + FastAPI matches 'build Python APIs'"). No generic praise.

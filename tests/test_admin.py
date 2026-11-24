@@ -66,3 +66,61 @@ async def test_admin_disabled_when_no_key_configured(fake_ingest, monkeypatch):
     monkeypatch.setattr(get_settings(), "admin_api_key", "")
     resp = await _post("/admin/ingest", {"X-Admin-Key": ""})
     assert resp.status_code == 503
+
+
+async def test_stats_reports_jobs_users_and_llm_cost(sessionmaker):
+    from decimal import Decimal
+
+    from app.db.models import Job, LLMCall, Match, User
+    from app.db.session import get_sessionmaker
+
+    async with sessionmaker() as s, s.begin():
+        u = User(name="u", telegram_chat_id=9)
+        s.add(u)
+        await s.flush()
+        s.add_all(
+            [
+                Job(source="greenhouse", source_id="1", company="A", title="t", url="x"),
+                Job(
+                    source="greenhouse",
+                    source_id="2",
+                    company="A",
+                    title="t",
+                    url="x",
+                    ghost_score=0.9,
+                ),
+                Job(
+                    source="lever", source_id="3", company="B", title="t", url="x", is_active=False
+                ),
+            ]
+        )
+        await s.flush()
+        s.add(Match(user_id=u.id, job_id=(await s.get(Job, 1)).id, feedback=1))
+        for cost in ("0.0010", "0.0030"):
+            s.add(
+                LLMCall(
+                    user_id=u.id,
+                    provider="groq",
+                    model="m",
+                    purpose="rerank",
+                    prompt_tokens=1000,
+                    completion_tokens=100,
+                    cost_usd=Decimal(cost),
+                )
+            )
+    app.dependency_overrides[get_sessionmaker] = lambda: sessionmaker
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+            assert (await c.get("/admin/stats")).status_code == 401
+            resp = await c.get("/admin/stats", headers={"X-Admin-Key": "test-admin-key"})
+    finally:
+        app.dependency_overrides.clear()
+    data = resp.json()
+    assert data["jobs"]["total"] == 3 and data["jobs"]["active"] == 2
+    assert data["jobs"]["ghost_jobs"] == 1
+    assert {r["source"]: r["active"] for r in data["by_source"]} == {"greenhouse": 2}
+    assert data["users"] == {"total": 1, "telegram": 1, "with_resume": 0}
+    assert data["matches"]["thumbs_up"] == 1
+    [day] = data["per_user_per_day"]
+    assert day["calls"] == 2 and day["tokens"] == 2200
+    assert data["avg_est_cost_per_user_per_day_usd"] == pytest.approx(0.004)

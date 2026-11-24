@@ -15,7 +15,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.agent.sql_guard import MAX_ROWS, UnsafeSQL, validate_sql
-from app.llm.client import LLMClient
+from app.llm.client import LLMClient, LLMError
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,10 @@ MAX_CELL_CHARS = 300
 
 
 class GeneratedSQL(BaseModel):
-    sql: str
+    """Either SQL, or a refusal (the model may decline e.g. "delete all jobs")."""
+
+    sql: str | None = None
+    refusal: str | None = None
 
 
 SCHEMA_DOC = """PostgreSQL tables you may query (no others exist for you):
@@ -53,7 +56,9 @@ Conventions:
 
 SQL_SYSTEM = f"""You translate questions about a job database into one PostgreSQL SELECT.
 {SCHEMA_DOC}
-Return {{"sql": "..."}}. Today is {{today}}."""
+Return {{"sql": "..."}}, or {{"refusal": "<why>"}} if the request is not a read-only
+question about jobs/companies (e.g. asks to modify data or read other tables).
+Today is {{today}}."""
 
 
 def _jsonable(value: Any) -> Any:
@@ -99,10 +104,15 @@ async def answer_question(
     prompt = f"Question: {question}"
     sql = ""
     for attempt in range(2):
-        generated = await llm.structured(
-            purpose="text_to_sql", system=system, prompt=prompt, schema=GeneratedSQL,
-            user_id=user_id, use_cache=attempt == 0,
-        )  # fmt: skip
+        try:
+            generated = await llm.structured(
+                purpose="text_to_sql", system=system, prompt=prompt, schema=GeneratedSQL,
+                user_id=user_id, use_cache=attempt == 0,
+            )  # fmt: skip
+        except LLMError as exc:
+            return {"error": f"could not generate SQL: {exc}"[:300], "sql": sql}
+        if not generated.sql:
+            return {"error": f"refused: {generated.refusal or 'not a read-only question'}"}
         sql = generated.sql
         try:
             rows = await run_readonly(engine, sql)
