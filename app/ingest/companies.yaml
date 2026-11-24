@@ -1,0 +1,36 @@
+# Companies whose public job boards we ingest. Slugs verified against the live APIs
+# on 2026-11-24 (Razorpay, Swiggy, PhonePe, Postman… are no longer on Greenhouse/Lever).
+# `industry` powers the "excluded industries" preference (e.g. "no more fintech").
+greenhouse:
+  - {slug: stripe, name: Stripe, industry: fintech}
+  - {slug: brex, name: Brex, industry: fintech}
+  - {slug: robinhood, name: Robinhood, industry: fintech}
+  - {slug: coinbase, name: Coinbase, industry: crypto}
+  - {slug: groww, name: Groww, industry: fintech}
+  - {slug: anthropic, name: Anthropic, industry: ai}
+  - {slug: scaleai, name: Scale AI, industry: ai}
+  - {slug: databricks, name: Databricks, industry: data}
+  - {slug: mongodb, name: MongoDB, industry: data}
+  - {slug: elastic, name: Elastic, industry: data}
+  - {slug: gitlab, name: GitLab, industry: devtools}
+  - {slug: vercel, name: Vercel, industry: devtools}
+  - {slug: datadog, name: Datadog, industry: devtools}
+  - {slug: twilio, name: Twilio, industry: devtools}
+  - {slug: cloudflare, name: Cloudflare, industry: cloud-infra}
+  - {slug: okta, name: Okta, industry: security}
+  - {slug: samsara, name: Samsara, industry: iot}
+  - {slug: figma, name: Figma, industry: saas}
+  - {slug: asana, name: Asana, industry: saas}
+  - {slug: dropbox, name: Dropbox, industry: saas}
+  - {slug: airbnb, name: Airbnb, industry: marketplace}
+  - {slug: instacart, name: Instacart, industry: marketplace}
+  - {slug: reddit, name: Reddit, industry: social}
+  - {slug: pinterest, name: Pinterest, industry: social}
+  - {slug: discord, name: Discord, industry: social}
+lever:
+  - {slug: palantir, name: Palantir, industry: data}
+  - {slug: spotify, name: Spotify, industry: consumer}
+  - {slug: cred, name: CRED, industry: fintech}
+  - {slug: zeta, name: Zeta, industry: fintech}
+  - {slug: meesho, name: Meesho, industry: ecommerce}
+  - {slug: mindtickle, name: Mindtickle, industry: saas}

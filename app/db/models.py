@@ -135,6 +135,7 @@ class Job(Base):
     remote: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
     salary_min: Mapped[int | None] = mapped_column(Integer)
     salary_max: Mapped[int | None] = mapped_column(Integer)
+    salary_currency: Mapped[str | None] = mapped_column(String(3))  # ISO 4217, e.g. USD/INR
     posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     url: Mapped[str] = mapped_column(Text, nullable=False)
 
