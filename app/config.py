@@ -6,7 +6,7 @@ All config goes through `get_settings()` so tests can override values in one pla
 from functools import lru_cache
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from pydantic import computed_field
+from pydantic import computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # The pgvector column size. Fixed so switching embedding providers never needs a migration:
@@ -66,6 +66,19 @@ class Settings(BaseSettings):
     telegram_webhook_url: str = ""  # e.g. https://jobscout.onrender.com (empty = polling)
     scheduler_enabled: bool = True
     admin_api_key: str = ""
+
+    @field_validator("telegram_webhook_url")
+    @classmethod
+    def _webhook_is_https(cls, v: str) -> str:
+        """Fail fast with a clear message. Seen in practice: Docker Compose reads
+        `TELEGRAM_WEBHOOK_URL=   # comment` as the value "# comment"."""
+        v = v.strip()
+        if v and not v.startswith("https://"):
+            raise ValueError(
+                "TELEGRAM_WEBHOOK_URL must be empty (polling) or an https:// URL; "
+                "don't put an inline # comment after an empty value in .env"
+            )
+        return v
 
     @computed_field  # type: ignore[prop-decorator]
     @property

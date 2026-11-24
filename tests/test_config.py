@@ -19,3 +19,15 @@ def test_already_async_url_untouched():
 
 def test_sslmode_disable_drops_ssl():
     assert to_async_url("postgresql://u:p@h/db?sslmode=disable") == "postgresql+asyncpg://u:p@h/db"
+
+
+def test_webhook_url_must_be_https_or_empty():
+    import pytest
+    from pydantic import ValidationError
+
+    from app.config import Settings
+
+    assert Settings(telegram_webhook_url="").telegram_webhook_url == ""
+    assert Settings(telegram_webhook_url="https://x.onrender.com").telegram_webhook_url
+    with pytest.raises(ValidationError, match="https://"):
+        Settings(telegram_webhook_url="# set in production only")
