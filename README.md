@@ -1,5 +1,7 @@
 # JobScout
 
+[![CI](https://github.com/boyatomic83/JobSearch/actions/workflows/ci.yml/badge.svg)](https://github.com/boyatomic83/JobSearch/actions/workflows/ci.yml)
+
 A mini AI job agent on Telegram: upload your resume, say what you want ("remote only",
 "no more fintech"), and every morning get the **3 best-matching real jobs** — with a fit
 score, the reasons, the biggest gap, and a one-tap **tailored resume** that's
