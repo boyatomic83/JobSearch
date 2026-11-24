@@ -84,6 +84,40 @@ Community"). The most common signals are age (4,303 jobs posted > 45 days ago �
 companies keep requisitions open for months) and missing salary (3,583). The weights are
 deliberately conservative: hiding a real job costs the user more than showing a stale one.
 
+## LLM provider
+
+All LLM calls go through `app/llm/` (`LLMClient` + a small provider interface), so the
+vendor is an env var: `LLM_PROVIDER=groq | gemini | xai`.
+
+- **Default: Groq** (`openai/gpt-oss-120b`, free tier: 1,000 requests/day, 8,000
+  tokens/minute). The spec's default was Gemini, but the Google project returned
+  `403 "The Gemini API free tier is not available for this project"` on every model, and
+  Google's only fix is enabling billing. The Gemini provider is still there as a drop-in.
+- `LLMClient` adds, for every provider: a requests/minute limiter, exponential backoff on
+  429s (honouring `Retry-After`), a Postgres response cache (`llm_cache`), Pydantic
+  validation with one "repair your JSON" retry, and a row in `llm_calls` per attempt.
+
+## Matching (RAG)
+
+1. **Resume → profile.** PDF text (pypdf) → one LLM call extracts a Pydantic-validated
+   profile (titles, skills, years, education, location). Cached, so re-uploads are free.
+2. **Retrieve.** The profile (plus target roles from preferences) is embedded and pgvector
+   returns the top 50 jobs by cosine, with hard filters applied *in the same SQL query*:
+   location, remote-only, min salary (same currency only; unknown salary is kept),
+   excluded companies/industries, seniority (by title), no duplicates, no ghost jobs
+   (> 0.7), nothing already shown. pgvector's iterative HNSW scan keeps filtering from
+   silently returning fewer than 50 rows.
+3. **Rerank.** The top 20 go to the LLM in **one** call, which returns the best 3 with a
+   0–100 fit score, 2–3 reasons and the biggest gap, grounded only in the text shown. Ids
+   the model invents are dropped; if the LLM is down, the user still gets the top
+   retrieval results, marked as unranked.
+
+LLM cost per match run: 1 call, ~3.4k prompt + ~400 output tokens (measured).
+
+Location detail worth knowing: 2,074 of 2,095 "remote" jobs are region-locked
+("Remote - USA"). A remote job is only shown if its location mentions one of your
+preferred locations (so put your country in preferences), unless it's truly unrestricted.
+
 ## Running locally
 
 ```bash

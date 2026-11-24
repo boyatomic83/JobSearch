@@ -38,6 +38,13 @@
 - Embedding dimension is 384 (`bge-small-en-v1.5`); Gemini embeddings must be requested
   at 384 dims (`output_dimensionality`) so the pgvector column never changes.
 
+## LLM
+- Default provider: Groq `openai/gpt-oss-120b` (Gemini project is 403 free-tier-blocked;
+  user chose Groq 2026-11-24). Free tier: 1000 req/day, 8000 tokens/min per model.
+- All calls go through `LLMClient` (never a provider/SDK directly). Tests use
+  `tests.fakes.make_llm` — no network in tests.
+- Prompts must forbid outside knowledge: reasons/gaps grounded in shown text only.
+
 ## Free-tier limits
 - Gemini free tier: rate-limit + exponential backoff on 429, cache results in `llm_cache`,
   log every call to `llm_calls`, rerank in one call.

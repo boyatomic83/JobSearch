@@ -65,6 +65,8 @@ class Preference(Base):
     locations: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}", nullable=False)
     remote_only: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
     min_salary: Mapped[int | None] = mapped_column(Integer)
+    # Salary filters only compare like with like: jobs in other currencies are kept.
+    salary_currency: Mapped[str] = mapped_column(String(3), server_default="USD", nullable=False)
     seniority: Mapped[str | None] = mapped_column(String(50))
     excluded_companies: Mapped[list[str]] = mapped_column(
         ARRAY(Text), server_default="{}", nullable=False

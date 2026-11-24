@@ -12,6 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.admin import router as admin_router
+from app.api.users import router as users_router
 from app.db.session import get_engine, get_session
 from app.matching.embeddings import get_embedder
 
@@ -30,6 +31,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="JobScout", version="0.1.0", lifespan=lifespan)
 app.include_router(admin_router)
+app.include_router(users_router)
 
 
 @app.get("/health")

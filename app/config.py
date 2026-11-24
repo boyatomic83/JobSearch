@@ -44,8 +44,16 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql://jobscout:jobscout@localhost:5432/jobscout"
     gemini_api_key: str = ""
-    llm_provider: str = "gemini"
+    groq_api_key: str = ""
+    xai_api_key: str = ""
+    llm_provider: str = "gemini"  # gemini | groq | xai
     llm_model: str = ""
+    # Optional, for reasoning models (e.g. gpt-oss): "low" saves tokens on the free tier.
+    llm_reasoning_effort: str = ""
+    llm_rpm: int = 20  # our own cap, kept below the provider's free-tier requests/minute
+    # Estimated $ per 1M tokens, for cost reporting only (free tier is $0 in practice).
+    llm_price_in_per_mtok: float = 0.0
+    llm_price_out_per_mtok: float = 0.0
     embedding_provider: str = "local"
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     # Where fastembed keeps the ONNX model (baked into the Docker image at build time).
