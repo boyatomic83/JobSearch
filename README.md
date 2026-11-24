@@ -1,9 +1,52 @@
 # JobScout
 
-A mini AI job agent: chat with a Telegram bot, upload your resume, state preferences, and
-every morning get the 3 best-matching real jobs with reasons and a tailored resume.
+A mini AI job agent on Telegram: upload your resume, say what you want ("remote only",
+"no more fintech"), and every morning get the **3 best-matching real jobs** — with a fit
+score, the reasons, the biggest gap, and a one-tap **tailored resume** that's
+fact-checked against your original.
 
-> Work in progress — built phase by phase (see `SPEC.md`). Full docs land in Phase 9.
+**Try it:** [@Cosmo122bot](https://t.me/Cosmo122bot) on Telegram · API health:
+<!-- LIVE_URL --> (Render free tier)
+
+![demo](docs/demo.gif) <!-- TODO: record a 20 s demo GIF -->
+
+Built as a portfolio project for AI-engineering roles: LLM agents with tool calling,
+RAG over pgvector, guarded text-to-SQL, evals, and observability — on free tiers only.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Sources["Public job APIs"]
+        GH[Greenhouse] & LV[Lever] & RO[RemoteOK]
+    end
+    subgraph Nightly["Nightly pipeline (GitHub Actions)"]
+        ING[Ingest + clean<br/>rate-limited, retries] --> EMB[Embed<br/>bge-small via ONNX] --> DD[Dedup + ghost score]
+    end
+    Sources --> ING
+    DD --> DB[(Neon Postgres<br/>+ pgvector HNSW)]
+
+    U((User)) <-->|Telegram| TG[Bot<br/>webhook]
+    subgraph App["FastAPI on Render"]
+        TG --> AG[Agent loop<br/>max 6 tool calls]
+        AG -->|tools| T1[search_jobs] & T2[update_preferences] & T3[run_sql_readonly] & T4[tailor_resume] & T5[explain_match]
+        T1 --> RET[SQL filters + vector top-50] --> RR[LLM rerank 20 → 3]
+        T3 --> GUARD[sqlglot validator → read-only role, 5 s timeout]
+        T4 --> TL[Rewrite → LLM fact-check → rule check → PDF]
+    end
+    RET & GUARD & AG --> DB
+    AG & RR & TL <--> LLM[Groq<br/>gpt-oss-120b / 20b]
+    CRON[GitHub Actions<br/>08:00 IST] -->|/admin/digest| App
+```
+
+| Layer | Choice | Why |
+|---|---|---|
+| API | FastAPI, Pydantic v2, SQLAlchemy 2 async, Alembic | typed, async, migrations run on startup |
+| Data | Postgres + pgvector (Neon free) | one store for jobs, vectors, chat memory, LLM logs |
+| Embeddings | BAAI/bge-small-en-v1.5 via fastembed (ONNX) | free, local, fits 512 MB RAM (see below) |
+| LLM | Groq `openai/gpt-oss-120b` (tasks), `gpt-oss-20b` (agent) | free tier; provider is an env var |
+| Bot | python-telegram-bot, webhooks in prod | |
+| Jobs | GitHub Actions cron | Render free instances sleep |
 
 ## Job sources
 
@@ -283,6 +326,7 @@ Measured: a first reply takes ~4 s; messages sent back-to-back without pause slo
 ## Running locally
 
 ```bash
+cp .env.example .env   # fill in GROQ_API_KEY, TELEGRAM_BOT_TOKEN, ADMIN_API_KEY
 docker compose up -d db
 python -m venv .venv && .venv/bin/pip install -e '.[dev]'
 DATABASE_URL=postgresql://jobscout:jobscout@localhost:5432/jobscout .venv/bin/alembic upgrade head
@@ -292,3 +336,41 @@ DATABASE_URL=postgresql://jobscout:jobscout@localhost:5432/jobscout .venv/bin/py
 ```
 
 Or the whole stack: `docker compose up --build` → http://localhost:8000/health
+
+With `TELEGRAM_BOT_TOKEN` set and no webhook URL, the bot runs in polling mode locally.
+Only one process can poll a bot token at a time.
+
+## Deploying (free tiers)
+
+1. **Neon:** create a project and put its connection string in `DATABASE_URL`. Load data
+   once from your machine: `alembic upgrade head && python -m app.ingest.run && python -m
+   app.matching.run` (embedding ~7.5k jobs takes ~40 min on 2 CPUs).
+2. **Render:** *New → Blueprint* → this repo. `render.yaml` defines the service; enter the
+   four secrets (`DATABASE_URL`, `GROQ_API_KEY`, `TELEGRAM_BOT_TOKEN`, `ADMIN_API_KEY`).
+   The app registers the Telegram webhook at `$RENDER_EXTERNAL_URL/telegram/webhook` on
+   startup — no manual step.
+3. **GitHub Actions secrets:** `DATABASE_URL`, `ADMIN_API_KEY`, `APP_URL` (the Render URL)
+   for the nightly pipeline, the 08:00 IST digest and keep-alive pings.
+
+Render's free instance has 512 MB RAM and 0.1 CPU: the app idles at ~310 MB with the
+embedding model loaded, which is why heavy embedding runs in GitHub Actions instead.
+
+## Tests
+
+`pytest` — 170+ tests, no network: connectors on recorded API responses, dedup, ghost
+score, SQL guardrails (including the DB-level role with the validator bypassed),
+preference updates, the agent loop and tailoring with a scripted fake LLM, the bot logic
+with a fake Telegram bot. CI runs ruff + pytest against pgvector on every push.
+
+## What I'd do next
+
+- **Bigger, independent eval set:** 3 resumes is enough to catch regressions (it caught
+  two), not to claim numbers. Label ~30 resumes with 2 annotators and report agreement.
+- **Learn from feedback:** use 👍/👎 as training signal — e.g. a lightweight learned
+  re-ranker on (profile, job) features, or few-shot examples in the rerank prompt.
+- **More sources:** Ashby, Workable, SmartRecruiters and Indian boards; coverage is the
+  real ceiling (London data engineering had exactly one open role).
+- **Better ghost detection:** track per-company repost patterns and time-to-close.
+- **Streaming replies + a paid LLM tier:** the 8k tokens/minute free limit, not the code,
+  sets latency when users send messages back-to-back.
+- **Multi-language resumes:** embed a Unicode font in the PDF renderer.

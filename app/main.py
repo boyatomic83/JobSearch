@@ -34,8 +34,8 @@ async def _start_bot(app: FastAPI) -> None:
     tg = build_application(deps)
     await tg.initialize()
     await tg.start()
-    if settings.telegram_webhook_url:
-        url = settings.telegram_webhook_url.rstrip("/") + "/telegram/webhook"
+    if settings.webhook_base_url:
+        url = settings.webhook_base_url.rstrip("/") + "/telegram/webhook"
         await tg.bot.set_webhook(
             url, secret_token=webhook_secret(settings.telegram_bot_token),
             allowed_updates=Update.ALL_TYPES,

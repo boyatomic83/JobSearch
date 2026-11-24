@@ -64,10 +64,17 @@ class Settings(BaseSettings):
     embedding_cache_dir: str = ".cache/fastembed"
     telegram_bot_token: str = ""
     telegram_webhook_url: str = ""  # e.g. https://jobscout.onrender.com (empty = polling)
+    # Set automatically by Render; used as the webhook base when TELEGRAM_WEBHOOK_URL is empty.
+    render_external_url: str = ""
     scheduler_enabled: bool = True
     admin_api_key: str = ""
 
-    @field_validator("telegram_webhook_url")
+    @property
+    def webhook_base_url(self) -> str:
+        """Where Telegram should send updates; empty means local long-polling."""
+        return self.telegram_webhook_url or self.render_external_url
+
+    @field_validator("telegram_webhook_url", "render_external_url")
     @classmethod
     def _webhook_is_https(cls, v: str) -> str:
         """Fail fast with a clear message. Seen in practice: Docker Compose reads

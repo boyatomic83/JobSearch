@@ -1,0 +1,28 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: jobscout
+          POSTGRES_PASSWORD: jobscout
+          POSTGRES_DB: jobscout
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U jobscout" --health-interval 2s
+          --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e '.[dev]'
+      - run: ruff check . && ruff format --check .
+      - run: pytest -q

@@ -31,3 +31,11 @@ def test_webhook_url_must_be_https_or_empty():
     assert Settings(telegram_webhook_url="https://x.onrender.com").telegram_webhook_url
     with pytest.raises(ValidationError, match="https://"):
         Settings(telegram_webhook_url="# set in production only")
+
+
+def test_webhook_base_falls_back_to_render_url():
+    from app.config import Settings
+
+    s = Settings(telegram_webhook_url="", render_external_url="https://jobscout.onrender.com")
+    assert s.webhook_base_url == "https://jobscout.onrender.com"
+    assert Settings(telegram_webhook_url="", render_external_url="").webhook_base_url == ""
