@@ -16,6 +16,7 @@
 - Tests: `pytest` (DB tests use `TEST_DATABASE_URL`, default local docker DB; they skip if unreachable).
 - Lint: `ruff check . --fix && ruff format .`
 - Ingest (local DB): `DATABASE_URL=postgresql://jobscout:jobscout@localhost:5432/jobscout python -m app.ingest.run [--source greenhouse lever remoteok]`
+- Embed + dedup + ghost score: same DATABASE_URL, `python -m app.matching.run [--reembed]` (~3 jobs/s on 2 CPUs)
 - Admin API: `curl -X POST -H "X-Admin-Key: $KEY" localhost:8000/admin/ingest?source=lever`
 
 ## Code style
@@ -23,6 +24,7 @@
 - Pydantic v2 for all external data (API payloads, LLM structured output). 
 - Keep it simple and explainable: no frameworks beyond the spec (no LangChain). 
   Short docstrings that explain *why*.
+
 - Config only through `app.config.get_settings()`; never read `os.environ` elsewhere.
 - Provider-agnostic code talks to `app/llm/` and the embeddings interface, never to SDKs directly.
 - Logging via `logging.getLogger(__name__)`; no `print` in app code (CLIs may print results).
@@ -40,3 +42,9 @@
 - Gemini free tier: rate-limit + exponential backoff on 429, cache results in `llm_cache`,
   log every call to `llm_calls`, rerank in one call.
 - Render free: low RAM — load the embedding model once, lazily, and keep it small.
+  Local embeddings use fastembed (ONNX), NOT sentence-transformers/torch (440 MB just to
+  import; user approved the swap 2026-11-24). Keep `LocalEmbedder.BATCH_SIZE` small.
+  Measured peak while embedding: ~440 MB with MALLOC_ARENA_MAX=2 — re-measure after
+  adding anything heavy to the web process.
+- Dedup = same company + location + normalised title + cosine > 0.95 (title/location
+  guards are deliberate, backed by data in README). Don't loosen without re-measuring.

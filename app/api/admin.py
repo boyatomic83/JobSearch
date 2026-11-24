@@ -9,6 +9,8 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from app.config import get_settings
 from app.db.session import get_sessionmaker
 from app.ingest.service import build_connectors, run_ingest
+from app.matching.embeddings import get_embedder
+from app.matching.process import run_processing
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -27,12 +29,20 @@ def require_admin(x_admin_key: Annotated[str | None, Header()] = None) -> None:
 @router.post("/ingest", dependencies=[Depends(require_admin)])
 async def ingest(
     source: Annotated[list[Literal["greenhouse", "lever", "remoteok"]] | None, Query()] = None,
+    process: bool = True,
 ) -> dict:
-    """Run ingestion now and return the per-feed report (takes ~1 minute for all feeds)."""
+    """Run ingestion now (+ embed / dedup / ghost-score unless process=false) and report.
+
+    Takes ~1 minute for all feeds, plus embedding time for new jobs.
+    """
     if _ingest_lock.locked():
         raise HTTPException(status.HTTP_409_CONFLICT, "an ingest run is already in progress")
     async with _ingest_lock:
         report = await run_ingest(
             get_sessionmaker(), build_connectors(list(source) if source else None)
         )
-    return report.to_dict()
+        result = report.to_dict()
+        if process:
+            processed = await run_processing(get_sessionmaker(), get_embedder())
+            result["processing"] = processed.to_dict()
+    return result

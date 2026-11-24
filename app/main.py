@@ -1,5 +1,6 @@
 """FastAPI entrypoint."""
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.admin import router as admin_router
 from app.db.session import get_engine, get_session
+from app.matching.embeddings import get_embedder
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -19,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # Load the embedding model once, at startup, so the first request isn't slow and the
+    # model is never loaded twice (it's the biggest chunk of our RAM on Render's free tier).
+    await asyncio.to_thread(get_embedder)
     yield
     await get_engine().dispose()
 

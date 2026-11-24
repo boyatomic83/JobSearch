@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     llm_model: str = ""
     embedding_provider: str = "local"
     embedding_model: str = "BAAI/bge-small-en-v1.5"
+    # Where fastembed keeps the ONNX model (baked into the Docker image at build time).
+    embedding_cache_dir: str = ".cache/fastembed"
     telegram_bot_token: str = ""
     telegram_webhook_url: str = ""
     admin_api_key: str = ""

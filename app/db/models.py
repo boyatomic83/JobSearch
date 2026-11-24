@@ -151,7 +151,10 @@ class Job(Base):
     ghost_score: Mapped[float] = mapped_column(Float, server_default="0", nullable=False)
     ghost_reasons: Mapped[list[str]] = mapped_column(JSONB, server_default="[]", nullable=False)
 
-    content_hash: Mapped[str | None] = mapped_column(String(64))
+    # Exactly what gets embedded: title + company + boilerplate-free, truncated description.
+    # Also a compact description for LLM prompts (reranking 20 jobs).
+    embedding_text: Mapped[str] = mapped_column(Text, server_default="", nullable=False)
+    content_hash: Mapped[str | None] = mapped_column(String(64))  # sha256 of embedding_text
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM))
 
 

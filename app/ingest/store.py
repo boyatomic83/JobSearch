@@ -5,17 +5,24 @@ Lifecycle of a job row:
 - seen again           → UPDATE fields + last_seen_at
 - missing from a run   → is_active = false (only for complete feeds, see Connector)
 - back after missing   → is_active = true, times_reposted += 1 (a ghost-job signal)
+- text changed         → new content_hash, embedding = NULL (re-embedded next run)
 """
 
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import case, select, update
+from sqlalchemy import case, null, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Company, Job
 from app.ingest.base import CompanyConfig, JobPosting
+from app.matching.text import (
+    content_hash,
+    find_boilerplate,
+    job_embedding_text,
+    strip_boilerplate,
+)
 
 BATCH_SIZE = 500  # keeps each INSERT well under Postgres' bind-parameter limit
 
@@ -50,6 +57,19 @@ async def upsert_jobs(
     unique = list({p.source_id: p for p in postings}.values())
     result = UpsertResult()
 
+    # Boilerplate is judged over the *whole feed* (not one batch), per company, because an
+    # aggregator feed like RemoteOK mixes many companies.
+    by_company: dict[str, list[str]] = {}
+    for p in unique:
+        by_company.setdefault(p.company, []).append(p.description)
+    boilerplate = {co: find_boilerplate(descs) for co, descs in by_company.items()}
+    embed_texts = {
+        p.source_id: job_embedding_text(
+            p.title, p.company, strip_boilerplate(p.description, boilerplate[p.company])
+        )
+        for p in unique
+    }
+
     for start in range(0, len(unique), BATCH_SIZE):
         batch = unique[start : start + BATCH_SIZE]
         source = batch[0].source
@@ -70,13 +90,20 @@ async def upsert_jobs(
 
         rows = [
             p.model_dump()
-            | {"company_id": company_id, "first_seen_at": seen_at, "last_seen_at": seen_at}
+            | {
+                "company_id": company_id,
+                "first_seen_at": seen_at,
+                "last_seen_at": seen_at,
+                "embedding_text": embed_texts[p.source_id],
+                "content_hash": content_hash(embed_texts[p.source_id]),
+            }
             for p in batch
         ]
         stmt = insert(Job).values(rows)
         updatable = [
             "company_id", "company", "title", "description", "location", "remote",
             "salary_min", "salary_max", "salary_currency", "posted_at", "url", "last_seen_at",
+            "embedding_text", "content_hash",
         ]  # fmt: skip
         stmt = stmt.on_conflict_do_update(
             constraint="uq_jobs_source_source_id",
@@ -85,6 +112,11 @@ async def upsert_jobs(
                 "is_active": True,
                 # Evaluated against the *old* row: bump only if it had disappeared.
                 "times_reposted": Job.times_reposted + case((Job.is_active.is_(False), 1), else_=0),
+                # Text changed → drop the stale vector so the embed step picks the job up.
+                "embedding": case(
+                    (Job.content_hash.is_distinct_from(stmt.excluded.content_hash), null()),
+                    else_=Job.embedding,
+                ),
             },
         )
         await session.execute(stmt)
