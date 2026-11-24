@@ -102,3 +102,41 @@ async def test_rate_limiter_spaces_requests():
 def test_strip_fences():
     assert json.loads(_strip_fences('```json\n{"a": 1}\n```')) == {"a": 1}
     assert _strip_fences('{"a": 1}') == '{"a": 1}'
+
+
+async def test_token_budget_refills_continuously():
+    from app.llm.client import TokenBudget
+
+    now = [0.0]
+    sleeps: list[float] = []
+
+    async def fake_sleep(seconds):
+        sleeps.append(seconds)
+        now[0] += seconds  # advance the fake clock
+
+    budget = TokenBudget(tpm=6000, sleep=fake_sleep, clock=lambda: now[0])  # 100 tokens/s
+    await budget.reserve(4000)
+    await budget.reserve(2000)  # bucket now empty, no wait yet
+    assert sleeps == []
+    await budget.reserve(1000)  # needs 1000 tokens at 100/s → 10 s, not a full minute
+    assert sleeps == [pytest.approx(10.0)]
+
+    overhead = TokenBudget.REQUEST_OVERHEAD
+    budget.settle(reserved=1000, actual=1000)  # real cost = 1000 + overhead → extra charge
+    await budget.reserve(500)
+    assert sleeps[-1] == pytest.approx((overhead + 500) / 100)
+
+    before = budget._level
+    budget.settle(reserved=2000, actual=100)  # cheaper than reserved → refund the rest
+    assert budget._level == pytest.approx(before + 2000 - (100 + overhead))
+
+
+async def test_token_budget_disabled_never_waits():
+    from app.llm.client import TokenBudget
+
+    async def boom(_):
+        raise AssertionError("should not sleep")
+
+    budget = TokenBudget(tpm=0, sleep=boom)
+    for _ in range(5):
+        await budget.reserve(10_000)

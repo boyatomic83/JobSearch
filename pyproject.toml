@@ -22,6 +22,7 @@ dependencies = [
     "pypdf>=4.0",
     "python-multipart>=0.0.9",
     "reportlab>=4.0",
+    "sqlglot>=25",  # parses agent-written SQL for the text-to-SQL guardrails
 ]
 
 [project.optional-dependencies]

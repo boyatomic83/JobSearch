@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.config import get_settings
 from app.db.models import LLMCache, LLMCall
-from app.llm.base import LLMProvider, LLMResponse, RateLimited
+from app.llm.base import LLMProvider, LLMResponse, RateLimited, ToolSpec
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +54,63 @@ class RateLimiter:
             self._next_at = max(now, self._next_at) + self._interval
 
 
+class TokenBudget:
+    """Token bucket for the provider's tokens/minute limit: waits *before* a call that
+    the provider would reject, instead of collecting 429s.
+
+    Why: the binding free-tier limit is tokens/minute (Groq: 8k), not requests, and every
+    rejected request still counts against the daily request quota. The bucket holds up
+    to `tpm` tokens and refills continuously at tpm/60 per second (like the provider's
+    limiter), so after a burst we wait seconds, not a whole minute.
+    """
+
+    def __init__(self, tpm: int, sleep=asyncio.sleep, clock=time.monotonic) -> None:
+        self._capacity = float(tpm)
+        self._rate = tpm / 60.0
+        self._level = float(tpm)
+        self._sleep = sleep
+        self._clock = clock
+        self._updated = clock()
+        self._lock = asyncio.Lock()
+
+    def _refill(self) -> None:
+        now = self._clock()
+        self._level = min(self._capacity, self._level + (now - self._updated) * self._rate)
+        self._updated = now
+
+    async def reserve(self, tokens: int) -> int:
+        """Block until `tokens` are available, take them, and return the amount taken."""
+        if self._capacity <= 0:
+            return 0
+        tokens = min(tokens, int(self._capacity))  # a huge call must still be able to run
+        async with self._lock:
+            self._refill()
+            if self._level < tokens:
+                wait = (tokens - self._level) / self._rate
+                logger.info("token budget: waiting %.1fs for %d tokens", wait, tokens)
+                await self._sleep(wait)
+                self._refill()
+            self._level -= tokens
+        return tokens
+
+    # Groq bills more than the usage it reports: measured 559 tokens charged for a call
+    # that reported 93, i.e. ~470 tokens of per-request overhead.
+    REQUEST_OVERHEAD = 500
+
+    def settle(self, reserved: int, actual: int) -> None:
+        """Replace the up-front estimate with the real cost (refund or extra charge)."""
+        if self._capacity > 0:
+            real = actual + self.REQUEST_OVERHEAD
+            self._level = min(self._capacity, self._level + reserved - real)
+
+
+def estimate_tokens(system: str, messages: list[dict[str, Any]], tools) -> int:
+    """~4 chars per token, plus room for the answer (and reasoning tokens)."""
+    chars = len(system) + sum(len(str(m.get("content") or "")) for m in messages)
+    chars += sum(len(json.dumps(t.parameters)) + len(t.description) for t in tools or [])
+    return chars // 4 + 800
+
+
 class LLMClient:
     def __init__(
         self,
@@ -61,6 +118,7 @@ class LLMClient:
         sessionmaker: async_sessionmaker[AsyncSession],
         *,
         rpm: int = 20,
+        tpm: int = 0,
         max_retries: int = 4,
         price_in_per_mtok: float = 0.0,
         price_out_per_mtok: float = 0.0,
@@ -69,6 +127,7 @@ class LLMClient:
         self.provider = provider
         self._sessionmaker = sessionmaker
         self._limiter = RateLimiter(rpm, sleep)
+        self._budget = TokenBudget(tpm, sleep)
         self._max_retries = max_retries
         self._price_in = price_in_per_mtok
         self._price_out = price_out_per_mtok
@@ -124,6 +183,18 @@ class LLMClient:
             return result
         raise AssertionError("unreachable")
 
+    async def chat(
+        self,
+        *,
+        purpose: str,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[ToolSpec] | None = None,
+        user_id: int | None = None,
+    ) -> LLMResponse:
+        """A free-form (optionally tool-calling) turn. Not cached: chat depends on state."""
+        return await self._call(purpose, user_id, system, messages, json_mode=False, tools=tools)
+
     # ---- internals ----------------------------------------------------------------
 
     async def _call(
@@ -133,13 +204,16 @@ class LLMClient:
         system: str,
         messages: list[dict[str, Any]],
         json_mode: bool,
+        tools: list[ToolSpec] | None = None,
     ) -> LLMResponse:
+        estimate = estimate_tokens(system, messages, tools)
         for attempt in range(self._max_retries + 1):
+            reserved = await self._budget.reserve(estimate)
             await self._limiter.wait()
             started = time.monotonic()
             try:
                 resp = await self.provider.complete(
-                    system=system, messages=messages, json_mode=json_mode
+                    system=system, messages=messages, json_mode=json_mode, tools=tools
                 )
             except RateLimited as exc:
                 latency = int((time.monotonic() - started) * 1000)
@@ -155,6 +229,7 @@ class LLMClient:
                 await self._log(purpose, user_id, None, latency, status="error", error=exc)
                 raise LLMError(f"{purpose}: {type(exc).__name__}: {exc}") from exc
             latency = int((time.monotonic() - started) * 1000)
+            self._budget.settle(reserved, resp.prompt_tokens + resp.completion_tokens)
             await self._log(purpose, user_id, resp, latency)
             return resp
         raise AssertionError("unreachable")
@@ -222,32 +297,47 @@ def _strip_fences(text: str) -> str:
     return text.strip()
 
 
-def build_provider() -> LLMProvider:
+def build_provider(model: str | None = None) -> LLMProvider:
     s = get_settings()
+    model = model or s.llm_model
     if s.llm_provider == "gemini":
         from app.llm.gemini import GeminiProvider
 
-        return GeminiProvider(s.llm_model, s.gemini_api_key)
+        return GeminiProvider(model, s.gemini_api_key)
     if s.llm_provider in ("groq", "xai"):
         from app.llm.openai_compat import OpenAICompatibleProvider
 
         key = s.groq_api_key if s.llm_provider == "groq" else s.xai_api_key
         return OpenAICompatibleProvider(
-            s.llm_provider, s.llm_model, key, reasoning_effort=s.llm_reasoning_effort
+            s.llm_provider, model, key, reasoning_effort=s.llm_reasoning_effort
         )
     raise ValueError(f"unknown LLM_PROVIDER {s.llm_provider!r}")
 
 
 @lru_cache
 def get_llm_client() -> LLMClient:
-    """Process-wide client (one rate limiter shared by every request)."""
+    """Process-wide client for tasks (extraction, rerank, SQL, tailoring)."""
+    return _client_for(None)
+
+
+@lru_cache
+def get_agent_llm_client() -> LLMClient:
+    """Client for the chat agent's own turns: LLM_AGENT_MODEL if set, else the task client."""
+    model = get_settings().llm_agent_model
+    return _client_for(model) if model else get_llm_client()
+
+
+def _client_for(model: str | None) -> LLMClient:
+    """One client per model, each with its own rate limiter and token budget, matching
+    how providers apply free-tier limits per model."""
     from app.db.session import get_sessionmaker
 
     s = get_settings()
     return LLMClient(
-        build_provider(),
+        build_provider(model),
         get_sessionmaker(),
         rpm=s.llm_rpm,
+        tpm=s.llm_tpm,
         price_in_per_mtok=s.llm_price_in_per_mtok,
         price_out_per_mtok=s.llm_price_out_per_mtok,
     )

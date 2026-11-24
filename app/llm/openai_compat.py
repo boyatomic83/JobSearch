@@ -2,11 +2,12 @@
 small class covers both — only the base URL and key differ.
 """
 
+import json
 from typing import Any
 
 import openai
 
-from app.llm.base import LLMProvider, LLMResponse, RateLimited
+from app.llm.base import LLMProvider, LLMResponse, RateLimited, ToolCall, ToolSpec
 
 BASE_URLS = {
     "groq": "https://api.groq.com/openai/v1",
@@ -38,17 +39,32 @@ class OpenAICompatibleProvider(LLMProvider):
         )
 
     async def complete(
-        self, *, system: str, messages: list[dict[str, Any]], json_mode: bool = False
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, Any]],
+        json_mode: bool = False,
+        tools: list[ToolSpec] | None = None,
     ) -> LLMResponse:
         kwargs: dict[str, Any] = {}
         if json_mode:
             kwargs["response_format"] = {"type": "json_object"}
+        if tools:
+            kwargs["tools"] = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": t.name, "description": t.description, "parameters": t.parameters
+                    },
+                }
+                for t in tools
+            ]  # fmt: skip
         if self._reasoning_effort:
             kwargs["reasoning_effort"] = self._reasoning_effort
         try:
             resp = await self._client.chat.completions.create(
                 model=self.model,
-                messages=[{"role": "system", "content": system}, *messages],
+                messages=[{"role": "system", "content": system}, *map(_to_openai, messages)],
                 temperature=0.2,  # low: extraction/ranking should be repeatable
                 **kwargs,
             )
@@ -56,8 +72,43 @@ class OpenAICompatibleProvider(LLMProvider):
             retry_after = exc.response.headers.get("retry-after") if exc.response else None
             raise RateLimited(str(exc), float(retry_after) if retry_after else None) from exc
         usage = resp.usage
+        msg = resp.choices[0].message
+        calls = [
+            ToolCall(id=c.id, name=c.function.name, arguments=_parse_args(c.function.arguments))
+            for c in msg.tool_calls or []
+        ]
         return LLMResponse(
-            text=resp.choices[0].message.content or "",
+            text=msg.content or "",
             prompt_tokens=usage.prompt_tokens if usage else 0,
             completion_tokens=usage.completion_tokens if usage else 0,
+            tool_calls=calls,
         )
+
+
+def _parse_args(raw: str | None) -> dict[str, Any]:
+    """Models occasionally emit invalid JSON arguments; surface that as a tool error later."""
+    try:
+        args = json.loads(raw or "{}")
+    except json.JSONDecodeError:
+        return {"__invalid_json__": raw}
+    return args if isinstance(args, dict) else {"__invalid_json__": raw}
+
+
+def _to_openai(m: dict[str, Any]) -> dict[str, Any]:
+    """Neutral message → OpenAI chat format."""
+    if m["role"] == "tool":
+        return {"role": "tool", "tool_call_id": m["tool_call_id"], "content": m["content"]}
+    if m["role"] == "assistant" and m.get("tool_calls"):
+        return {
+            "role": "assistant",
+            "content": m.get("content") or None,
+            "tool_calls": [
+                {
+                    "id": c.id,
+                    "type": "function",
+                    "function": {"name": c.name, "arguments": json.dumps(c.arguments)},
+                }
+                for c in m["tool_calls"]
+            ],
+        }
+    return {"role": m["role"], "content": m["content"]}

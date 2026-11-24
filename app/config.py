@@ -48,9 +48,13 @@ class Settings(BaseSettings):
     xai_api_key: str = ""
     llm_provider: str = "gemini"  # gemini | groq | xai
     llm_model: str = ""
+    # Optional separate model for the chat agent's own turns. Groq rate-limits per model,
+    # so this gives the agent its own tokens/minute budget (rerank etc. stay on LLM_MODEL).
+    llm_agent_model: str = ""
     # Optional, for reasoning models (e.g. gpt-oss): "low" saves tokens on the free tier.
     llm_reasoning_effort: str = ""
     llm_rpm: int = 20  # our own cap, kept below the provider's free-tier requests/minute
+    llm_tpm: int = 7000  # tokens/minute budget (Groq free tier: 8000); 0 disables
     # Estimated $ per 1M tokens, for cost reporting only (free tier is $0 in practice).
     llm_price_in_per_mtok: float = 0.0
     llm_price_out_per_mtok: float = 0.0

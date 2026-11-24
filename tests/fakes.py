@@ -46,17 +46,32 @@ class FakeLLMProvider:
         self.replies = list(replies or [])
         self.calls: list[dict] = []
 
-    async def complete(self, *, system, messages, json_mode=False):
+    async def complete(self, *, system, messages, json_mode=False, tools=None):
+        """A reply may be: str (text), LLMResponse (e.g. with tool_calls), an Exception to
+        raise, or a callable(messages) returning either."""
         from app.llm.base import LLMResponse
 
-        self.calls.append({"system": system, "messages": messages, "json_mode": json_mode})
+        self.calls.append(
+            {"system": system, "messages": list(messages), "json_mode": json_mode, "tools": tools}
+        )
         if not self.replies:
             raise AssertionError("FakeLLMProvider: no scripted reply left")
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
             raise reply
-        text = reply(messages) if callable(reply) else reply
-        return LLMResponse(text=text, prompt_tokens=100, completion_tokens=20)
+        if callable(reply):
+            reply = reply(messages)
+        if isinstance(reply, LLMResponse):
+            return reply
+        return LLMResponse(text=reply, prompt_tokens=100, completion_tokens=20)
+
+
+def tool_call(name: str, call_id: str = "c1", **arguments):
+    """A scripted LLM reply that calls one tool."""
+    from app.llm.base import LLMResponse, ToolCall
+
+    call = ToolCall(id=call_id, name=name, arguments=arguments)
+    return LLMResponse(text="", prompt_tokens=100, completion_tokens=20, tool_calls=[call])
 
 
 async def no_sleep(_seconds: float) -> None:

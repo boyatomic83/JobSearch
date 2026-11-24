@@ -10,11 +10,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.agent.loop import handle_message
+from app.agent.tools import AgentContext
 from app.api.admin import require_admin
 from app.db.models import User
 from app.db.queries import get_or_create_preferences, get_user
-from app.db.session import get_sessionmaker
-from app.llm.client import LLMClient, LLMError, get_llm_client
+from app.db.session import get_engine, get_sessionmaker
+from app.llm.client import LLMClient, LLMError, get_agent_llm_client, get_llm_client
 from app.matching.embeddings import Embedder, get_embedder
 from app.matching.service import NoResumeError, find_matches
 from app.resume.parse import ResumeError
@@ -25,6 +27,7 @@ router = APIRouter(prefix="/users", tags=["users"], dependencies=[Depends(requir
 
 Sessions = Annotated[async_sessionmaker[AsyncSession], Depends(get_sessionmaker)]
 LLM = Annotated[LLMClient, Depends(get_llm_client)]
+AgentLLM = Annotated[LLMClient, Depends(get_agent_llm_client)]
 Emb = Annotated[Embedder, Depends(get_embedder)]
 
 
@@ -142,3 +145,19 @@ async def get_matches(
         )
         for r in results
     ]
+
+
+class ChatIn(BaseModel):
+    message: str = Field(min_length=1, max_length=4000)
+
+
+@router.post("/{user_id}/chat")
+async def chat(
+    user_id: int, body: ChatIn, sessions: Sessions, llm: LLM, agent_llm: AgentLLM, embedder: Emb
+) -> dict:
+    """Talk to the agent (the Telegram bot sends free-text messages here internally)."""
+    async with sessions() as session:
+        await _require_user(session, user_id)
+    ctx = AgentContext(sessions, get_engine(), agent_llm, embedder, user_id, task_llm=llm)
+    reply = await handle_message(ctx, body.message)
+    return {"reply": reply.text, "steps": reply.steps}

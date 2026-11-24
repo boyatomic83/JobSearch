@@ -118,6 +118,53 @@ Location detail worth knowing: 2,074 of 2,095 "remote" jobs are region-locked
 ("Remote - USA"). A remote job is only shown if its location mentions one of your
 preferred locations (so put your country in preferences), unless it's truly unrestricted.
 
+## Agent
+
+A hand-written tool-calling loop (`app/agent/loop.py`, no framework) on the provider's
+native function calling. Tools: `search_jobs`, `update_preferences`, `get_preferences`,
+`explain_match`, `tailor_resume`, `run_sql_readonly`.
+
+- **Long-term memory = the preferences row.** It is injected into the system prompt on
+  every turn, and the prompt requires calling `update_preferences` whenever the user
+  states a lasting preference ("no more fintech" → `exclude_industries_add: ["fintech"]`).
+  Changes are structured add/remove lists validated by Pydantic, never free-form SQL.
+- **Short-term memory = the last 20 chat messages.** Replies that showed jobs are replayed
+  with a `[jobs shown: 1) job_id 4080 = …]` note, so "why is the first one a good fit?"
+  resolves to the right id. (Found in testing: without it the model took a number from
+  the job's URL.)
+- **Limits:** max 6 tool calls per turn, then one final call with tools disabled. Every
+  tool step goes to `messages`, every LLM call to `llm_calls`.
+- **Grounding:** `explain_match` returns the user's real profile next to the job, and the
+  prompt forbids claiming experience the profile doesn't contain (found in testing: the
+  model invented "NLP projects" when it only had the job).
+- **Models:** the agent's own turns run on `LLM_AGENT_MODEL=openai/gpt-oss-20b` (Groq
+  rate-limits per model, so it gets its own tokens/minute budget); rerank, extraction and
+  SQL use `openai/gpt-oss-120b`. `qwen/qwen3.8-27b` was faster still but answered "how many
+  remote jobs?" with a made-up number (1,039; real: 2,068) instead of calling the SQL tool.
+
+## Text-to-SQL guardrails
+
+`run_sql_readonly("how many remote Python jobs in Bangalore were posted this week?")` →
+the LLM writes SQL with the schema in its prompt, then three independent layers apply:
+
+1. **Validator** (`app/agent/sql_guard.py`, sqlglot parse tree): exactly one `SELECT`;
+   only `jobs` / `companies` and whitelisted columns; no `*` except `COUNT(*)`; no CTEs,
+   `UNION`, `SELECT INTO`, `FOR UPDATE`, system catalogs or `pg_*`/`dblink` functions;
+   `LIMIT` forced to ≤ 100. Rejections go back to the LLM once so it can fix its query.
+2. **Transaction:** `READ ONLY` with `statement_timeout = 5s`.
+3. **Role:** `SET LOCAL ROLE jobscout_readonly`, which has column-level `SELECT` grants on
+   the whitelist only (migration 0005). Tests bypass the validator on purpose and show
+   the role still blocks `SELECT raw_text FROM resumes` and `SELECT embedding FROM jobs`.
+
+## Free-tier latency
+
+Groq's free tier allows 8,000 tokens/minute per model, and one agent turn costs ~4k
+(two calls of ~1.6k prompt tokens plus ~500 tokens of per-request overhead that Groq
+bills but doesn't report). `LLMClient` keeps a token bucket that refills at the same
+rate as Groq's and waits *before* a call would be rejected, so there are no 429 retries.
+Measured: a first reply takes ~4 s; messages sent back-to-back without pause slow to
+~30 s each once the bucket is empty. A paid tier removes the wait.
+
 ## Running locally
 
 ```bash

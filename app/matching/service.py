@@ -6,10 +6,11 @@ LLM calls per run: exactly one (the rerank). Resume extraction happens once at u
 import asyncio
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.db.models import Match
+from app.db.models import Match, Preference
 from app.db.queries import get_active_resume, get_or_create_preferences
 from app.llm.client import LLMClient
 from app.matching.embeddings import Embedder
@@ -37,14 +38,22 @@ async def find_matches(
     *,
     n: int = 3,
     query: str | None = None,
+    prefs_override: dict[str, Any] | None = None,
 ) -> list[MatchResult]:
+    """`prefs_override` applies one-off filters for this search only (never saved), e.g.
+    the agent's search_jobs(filters={"remote_only": True})."""
     async with sessionmaker() as session:
         resume = await get_active_resume(session, user_id)
         if resume is None or resume.profile is None:
             raise NoResumeError(user_id)
-        prefs = await get_or_create_preferences(session, user_id)
+        stored = await get_or_create_preferences(session, user_id)
         await session.commit()
     profile = ResumeProfile.model_validate(resume.profile)
+    # A detached copy, so overrides can never be flushed back to the user's real prefs.
+    prefs = Preference(
+        **{c.key: getattr(stored, c.key) for c in Preference.__table__.columns}
+        | (prefs_override or {})
+    )
 
     # Re-embed at match time (fast, local): target roles in preferences may have changed
     # since the upload, and an explicit query ("ML infra roles") should steer the search.

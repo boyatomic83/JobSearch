@@ -17,7 +17,7 @@ from app.resume.schemas import ResumeProfile
 logger = logging.getLogger(__name__)
 
 RERANK_K = 20
-JOB_SNIPPET_CHARS = 600  # per candidate; 20 x 600 chars keeps the prompt ~5k tokens
+JOB_SNIPPET_CHARS = 500  # per candidate; 20 x 500 chars keeps the prompt ~3k tokens
 
 
 class RankedJob(BaseModel):

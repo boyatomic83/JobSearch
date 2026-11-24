@@ -27,6 +27,15 @@ class LLMResponse:
     tool_calls: list[ToolCall] = field(default_factory=list)
 
 
+@dataclass
+class ToolSpec:
+    """A function the model may call. `parameters` is a JSON Schema object."""
+
+    name: str
+    description: str
+    parameters: dict[str, Any]
+
+
 class RateLimited(Exception):
     """The provider said 429 / quota exceeded. `retry_after` is in seconds, if given."""
 
@@ -41,10 +50,18 @@ class LLMProvider(ABC):
 
     @abstractmethod
     async def complete(
-        self, *, system: str, messages: list[dict[str, Any]], json_mode: bool = False
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, Any]],
+        json_mode: bool = False,
+        tools: list[ToolSpec] | None = None,
     ) -> LLMResponse:
         """One chat completion.
 
-        `messages` use a neutral format: [{"role": "user" | "assistant", "content": str}].
-        `json_mode` asks the provider to return a single JSON object.
+        `messages` use a neutral, provider-independent format:
+          {"role": "user", "content": str}
+          {"role": "assistant", "content": str, "tool_calls": [ToolCall, ...]}  # calls optional
+          {"role": "tool", "tool_call_id": str, "name": str, "content": str}    # a tool result
+        `json_mode` asks for a single JSON object; `tools` enables native function calling.
         """

@@ -19,6 +19,10 @@
 - Embed + dedup + ghost score: same DATABASE_URL, `python -m app.matching.run [--reembed]` (~3 jobs/s on 2 CPUs)
 - Admin API: `curl -X POST -H "X-Admin-Key: $KEY" localhost:8000/admin/ingest?source=lever`
 
+## Dependencies
+- New import → add it to `pyproject.toml` AND rebuild Docker (`docker compose up --build`)
+  before committing; the venv can hide a missing dependency (happened with sqlglot).
+
 ## Code style
 - Python 3.11+, type hints everywhere, async SQLAlchemy 2.0 (`Mapped[...]`, `mapped_column`).
 - Pydantic v2 for all external data (API payloads, LLM structured output). 
@@ -44,6 +48,10 @@
 - All calls go through `LLMClient` (never a provider/SDK directly). Tests use
   `tests.fakes.make_llm` — no network in tests.
 - Prompts must forbid outside knowledge: reasons/gaps grounded in shown text only.
+- Agent model: LLM_AGENT_MODEL=openai/gpt-oss-20b. Don't switch to qwen: it fabricated a
+  statistic instead of calling run_sql_readonly (tested 2026-11-24).
+- Text-to-SQL: never loosen sql_guard without a test; the 0005 grants must match
+  ALLOWED_COLUMNS (test enforces it).
 
 ## Free-tier limits
 - Gemini free tier: rate-limit + exponential backoff on 429, cache results in `llm_cache`,
