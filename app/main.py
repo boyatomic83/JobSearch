@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from telegram import Update
 
 from app.api.admin import router as admin_router
+from app.api.public import router as public_router
 from app.api.telegram import router as telegram_router
 from app.api.users import router as users_router
 from app.config import get_settings
@@ -81,6 +82,7 @@ app = FastAPI(title="JobScout", version="0.1.0", lifespan=lifespan)
 app.include_router(admin_router)
 app.include_router(users_router)
 app.include_router(telegram_router)
+app.include_router(public_router)
 
 
 @app.get("/health")
