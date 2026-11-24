@@ -23,6 +23,8 @@ dependencies = [
     "python-multipart>=0.0.9",
     "reportlab>=4.0",
     "sqlglot>=25",  # parses agent-written SQL for the text-to-SQL guardrails
+    "python-telegram-bot>=21",
+    "apscheduler>=3.10,<4",  # 4.x is a different API
 ]
 
 [project.optional-dependencies]

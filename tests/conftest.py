@@ -19,6 +19,7 @@ os.environ["ADMIN_API_KEY"] = "test-admin-key"
 os.environ["GEMINI_API_KEY"] = ""
 os.environ["TELEGRAM_BOT_TOKEN"] = ""
 os.environ["TELEGRAM_WEBHOOK_URL"] = ""
+os.environ["SCHEDULER_ENABLED"] = "false"
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402

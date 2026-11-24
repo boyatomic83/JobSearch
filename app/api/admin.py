@@ -4,7 +4,7 @@ import asyncio
 import secrets
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 
 from app.config import get_settings
 from app.db.session import get_sessionmaker
@@ -46,3 +46,14 @@ async def ingest(
             processed = await run_processing(get_sessionmaker(), get_embedder())
             result["processing"] = processed.to_dict()
     return result
+
+
+@router.post("/digest", dependencies=[Depends(require_admin)])
+async def digest(request: Request) -> dict:
+    """Send the daily digest now (demo / external cron when the instance was asleep)."""
+    from app.scheduler import send_daily_digest
+
+    tg = getattr(request.app.state, "telegram", None)
+    if tg is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "bot not running")
+    return await send_daily_digest(tg.bot, request.app.state.bot_deps)

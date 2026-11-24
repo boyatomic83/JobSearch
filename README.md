@@ -181,6 +181,27 @@ Header, contact and education come straight from the original resume. Built-in P
 lack some Unicode (the model's non-breaking hyphens rendered as boxes), so text is
 normalised to Windows-1252; resumes in non-Latin scripts would need an embedded TTF font.
 
+## Telegram bot
+
+`/start` (onboarding: role → location → remote → salary), `/resume` (send a PDF),
+`/prefs`, `/jobs`, `/help`; anything else goes to the agent. Each match has 👍 / 👎 /
+📝 Tailor resume buttons.
+
+- **Feedback → preferences.** 👎 asks why: "Not this company" / "Not this industry" are
+  saved as exclusions directly; seniority/location become notes; "Other" lets the user
+  type a reason, which is stored and handed to the agent to update preferences.
+- **Daily digest** at 08:00 IST (APScheduler) sends each user their top 3 *new* matches;
+  ingest + embedding + dedup + ghost scoring run nightly at 02:30 IST. If a message can't
+  be delivered, those matches are deleted again, so "shown" means actually received.
+- **Polling locally, webhook in production** (`TELEGRAM_WEBHOOK_URL`). The webhook checks
+  Telegram's `X-Telegram-Bot-Api-Secret-Token` (derived from the bot token) and queues the
+  update, returning immediately so slow LLM turns never trigger Telegram retries.
+- Bot logic lives in `app/bot/service.py` and returns plain `Out` messages, so it's
+  tested without Telegram; `telegram_app.py` is a thin adapter. Salaries like "40 LPA" /
+  "$150k" are parsed; "Bangalore" also matches "Bengaluru".
+- **Render free tier sleeps** after ~15 idle minutes and a sleeping process can't run its
+  scheduler, so `POST /admin/ingest` and `POST /admin/digest` exist for an external cron.
+
 ## Free-tier latency
 
 Groq's free tier allows 8,000 tokens/minute per model, and one agent turn costs ~4k

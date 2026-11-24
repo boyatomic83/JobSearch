@@ -55,6 +55,12 @@
 - Text-to-SQL: never loosen sql_guard without a test; the 0005 grants must match
   ALLOWED_COLUMNS (test enforces it).
 
+## Bot
+- Logic in app/bot/service.py (returns Out, testable); telegram_app.py only adapts.
+- Use HTML parse mode + html.escape for anything user/LLM/job-provided.
+- Only ONE process may poll a bot token (Telegram 409 Conflict): stop docker app before
+  running the bot elsewhere.
+
 ## Free-tier limits
 - Gemini free tier: rate-limit + exponential backoff on 429, cache results in `llm_cache`,
   log every call to `llm_calls`, rerank in one call.

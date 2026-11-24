@@ -63,7 +63,8 @@ class Settings(BaseSettings):
     # Where fastembed keeps the ONNX model (baked into the Docker image at build time).
     embedding_cache_dir: str = ".cache/fastembed"
     telegram_bot_token: str = ""
-    telegram_webhook_url: str = ""
+    telegram_webhook_url: str = ""  # e.g. https://jobscout.onrender.com (empty = polling)
+    scheduler_enabled: bool = True
     admin_api_key: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
