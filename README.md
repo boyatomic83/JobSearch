@@ -6,7 +6,7 @@ score, the reasons, the biggest gap, and a one-tap **tailored resume** that's
 fact-checked against your original.
 
 **Try it:** [@Cosmo122bot](https://t.me/Cosmo122bot) on Telegram · API health:
-<!-- LIVE_URL --> (Render free tier)
+[jobscout-6w30.onrender.com/health](https://jobscout-6w30.onrender.com/health) (Render free tier)
 
 ![demo](docs/demo.gif) <!-- TODO: record a 20 s demo GIF -->
 
